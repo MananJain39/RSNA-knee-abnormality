@@ -1,0 +1,120 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# =========================
+# Virtual environments
+# =========================
+.venv/
+venv/
+env/
+
+# =========================
+# Data
+# =========================
+
+# Ignore all downloaded/generated data by default
+data/*
+
+# Keep the data directory structure
+!data/raw/
+!data/raw/*.csv
+!data/raw/.gitkeep
+
+!data/processed/
+!data/processed/.gitkeep
+
+!data/external/
+!data/external/.gitkeep
+
+# Never commit competition MRI/DICOM data
+data/raw/train_series/
+data/raw/test_series/
+*.dcm
+*.nii
+*.nii.gz
+
+# Other potentially large data files
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.parquet
+
+# =========================
+# Models / Checkpoints
+# =========================
+models/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# =========================
+# Experiment Outputs
+# =========================
+experiments/
+outputs/
+logs/
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Testing / Coverage
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.local
+.env.*
+!.env.example
+
+# =========================
+# Kaggle
+# =========================
+kaggle.json
+.kaggle/
+
+# =========================
+# Temporary / Generated Files
+# =========================
+*.log
+*.tmp
+*.temp
+*.bak

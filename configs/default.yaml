@@ -1,0 +1,51 @@
+project:
+  name: rsna-knee
+  version: 0.1.0
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  external_dir: data/external
+  train_csv: data/raw/train.csv
+  train_series_csv: data/raw/train_series.csv
+  test_csv: data/raw/test.csv
+  test_series_csv: data/raw/test_series.csv
+  sample_submission_csv: data/raw/sample_submission.csv
+
+labels:
+  columns:
+    - ACL
+    - MCL
+    - Medial Meniscus
+    - Lateral Meniscus
+    - Medial OA
+    - Lateral OA
+    - PF OA
+    - Effusion
+    - Synovitis
+    - "Baker's"
+    - Contusion
+    - Fracture
+  gold_study_count: 58
+  not_addressed_value: 0.5
+
+extraction:
+  default_method: regex
+  llm:
+    provider: openai
+    model: gpt-4o
+    temperature: 0.0
+    max_retries: 3
+
+validation:
+  threshold: 0.5
+  gold_comparison: true
+
+imaging:
+  dicom_dir: data/raw/train_series
+  target_shape: [30, 256, 256]
+  normalization: minmax
+
+experiments:
+  dir: experiments
+  format: jsonl
