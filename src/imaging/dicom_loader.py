@@ -1,99 +1,104 @@
-"""DICOM series loading utilities.
-
-This is a stub module. Full implementation requires downloading the ~570 GB
-train_series/ DICOM dataset from Kaggle.
-"""
+"""DICOM series loading utilities."""
 
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
+import pydicom
+
+from src.imaging.geometry import sort_by_physical_position
+
+
+def _read_dicom(filepath: Path) -> pydicom.Dataset:
+    return pydicom.dcmread(str(filepath), stop_before_pixels=False)
+
+
+def _get_pixel_array(ds: pydicom.Dataset) -> np.ndarray:
+    return ds.pixel_array.astype(np.float32)
 
 
 def load_series(
     study_uid: str,
     series_uid: str,
-    data_dir: Optional[Path] = None,
+    data_dir: Path | None = None,
 ) -> np.ndarray:
-    """Load a DICOM series as a 3D numpy array.
+    if data_dir is None:
+        from src.config import DICOM_DIR
+        data_dir = DICOM_DIR
 
-    Args:
-        study_uid: StudyInstanceUID
-        series_uid: SeriesInstanceUID
-        data_dir: Path to train_series/ directory
+    series_dir = data_dir / study_uid / series_uid
+    if not series_dir.exists():
+        raise FileNotFoundError(f"Series directory not found: {series_dir}")
 
-    Returns:
-        3D numpy array of shape (n_slices, height, width)
+    dicom_files = sorted(series_dir.glob("*.dcm"))
+    if not dicom_files:
+        raise FileNotFoundError(f"No DICOM files found in {series_dir}")
 
-    Raises:
-        NotImplementedError: DICOM data not yet downloaded
-    """
-    raise NotImplementedError(
-        "DICOM loading requires downloading the train_series/ dataset (~570 GB). "
-        "Run: kaggle competitions download rsna-knee-abnormality-detection"
-    )
+    datasets = [_read_dicom(f) for f in dicom_files]
+    sorted_datasets = sort_by_physical_position(datasets)
+
+    slices = [_get_pixel_array(ds) for ds in sorted_datasets]
+    return np.stack(slices, axis=0)
 
 
 def load_study(
     study_uid: str,
-    data_dir: Optional[Path] = None,
+    data_dir: Path | None = None,
 ) -> dict[str, np.ndarray]:
-    """Load all series for a study.
+    if data_dir is None:
+        from src.config import DICOM_DIR
+        data_dir = DICOM_DIR
 
-    Args:
-        study_uid: StudyInstanceUID
-        data_dir: Path to train_series/ directory
+    study_dir = data_dir / study_uid
+    if not study_dir.exists():
+        raise FileNotFoundError(f"Study directory not found: {study_dir}")
 
-    Returns:
-        Dict mapping SeriesInstanceUID to 3D numpy arrays
+    series_uids = list_study_series(study_uid, data_dir)
+    result = {}
+    for series_uid in series_uids:
+        result[series_uid] = load_series(study_uid, series_uid, data_dir)
 
-    Raises:
-        NotImplementedError: DICOM data not yet downloaded
-    """
-    raise NotImplementedError(
-        "DICOM loading requires downloading the train_series/ dataset (~570 GB)."
-    )
+    return result
 
 
 def get_series_metadata(
     study_uid: str,
     series_uid: str,
-    data_dir: Optional[Path] = None,
+    data_dir: Path | None = None,
 ) -> dict:
-    """Extract metadata from a DICOM series.
+    if data_dir is None:
+        from src.config import DICOM_DIR
+        data_dir = DICOM_DIR
 
-    Args:
-        study_uid: StudyInstanceUID
-        series_uid: SeriesInstanceUID
-        data_dir: Path to train_series/ directory
+    series_dir = data_dir / study_uid / series_uid
+    dicom_files = sorted(series_dir.glob("*.dcm"))
+    if not dicom_files:
+        raise FileNotFoundError(f"No DICOM files found in {series_dir}")
 
-    Returns:
-        Dict with metadata fields (spacing, orientation, dimensions, etc.)
+    ds = _read_dicom(dicom_files[0])
 
-    Raises:
-        NotImplementedError: DICOM data not yet downloaded
-    """
-    raise NotImplementedError(
-        "DICOM loading requires downloading the train_series/ dataset (~570 GB)."
-    )
+    return {
+        "rows": int(ds.Rows),
+        "columns": int(ds.Columns),
+        "pixel_spacing": [float(x) for x in ds.PixelSpacing],
+        "slice_thickness": float(ds.SliceThickness),
+        "image_orientation": [float(x) for x in ds.ImageOrientationPatient],
+        "image_position": [float(x) for x in ds.ImagePositionPatient],
+        "modality": str(ds.Modality),
+        "transfer_syntax": str(ds.file_meta.TransferSyntaxUID),
+        "n_slices": len(dicom_files),
+    }
 
 
 def list_study_series(
     study_uid: str,
-    data_dir: Optional[Path] = None,
+    data_dir: Path | None = None,
 ) -> list[str]:
-    """List all series UIDs for a given study.
+    if data_dir is None:
+        from src.config import DICOM_DIR
+        data_dir = DICOM_DIR
 
-    Args:
-        study_uid: StudyInstanceUID
-        data_dir: Path to train_series/ directory
+    study_dir = data_dir / study_uid
+    if not study_dir.exists():
+        raise FileNotFoundError(f"Study directory not found: {study_dir}")
 
-    Returns:
-        List of SeriesInstanceUIDs
-
-    Raises:
-        NotImplementedError: DICOM data not yet downloaded
-    """
-    raise NotImplementedError(
-        "DICOM loading requires downloading the train_series/ dataset (~570 GB)."
-    )
+    return [d.name for d in sorted(study_dir.iterdir()) if d.is_dir()]
