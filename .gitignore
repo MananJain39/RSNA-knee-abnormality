@@ -118,3 +118,9 @@ kaggle.json
 *.tmp
 *.temp
 *.bak
+
+DATA_EXPLAINED.md
+PLAN.md
+RESEARCH_SUMMARY.md
+DECISION.md
+FLOW.md
