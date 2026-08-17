@@ -49,3 +49,32 @@ imaging:
 experiments:
   dir: experiments
   format: jsonl
+
+split:
+  val_frac: 0.20
+  seed: 42
+  group_col: Report
+  reserve_gold_to_val: true
+  output_dir: data/processed/splits/v1
+
+clustering:
+  k: 4
+  method: kmeans
+  seed: 42
+  metadata_table_path: data/processed/series_metadata.csv
+  output_path: data/processed/series_clusters.csv
+
+classical:
+  main_backbone: facebook/dinov2-base
+  specialist_backbone: facebook/dinov2-small
+  image_size: 336
+  n_groups_per_slot: 10
+  batch_size: 16
+  lr: 1.0e-5
+  weight_decay: 0.01
+  grad_accum_steps: 1
+  warmup_steps: 100
+  max_epochs: 20
+  ensemble_weights:
+    main: 0.5
+    specialist: 0.5
