@@ -75,6 +75,11 @@ classical:
   grad_accum_steps: 1
   warmup_steps: 100
   max_epochs: 20
+  ema_decay_main: 0.999
+  ema_decay_specialist: 0.995
+  use_amp: true
+  cosine_t_max: 20
+  checkpoint_dir: data/processed/checkpoints
   ensemble_weights:
     main: 0.5
     specialist: 0.5

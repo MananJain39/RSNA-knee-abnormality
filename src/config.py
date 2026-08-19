@@ -68,6 +68,11 @@ CLASSICAL_WEIGHT_DECAY = float(_cfg["classical"]["weight_decay"])
 CLASSICAL_GRAD_ACCUM_STEPS = int(_cfg["classical"]["grad_accum_steps"])
 CLASSICAL_WARMUP_STEPS = int(_cfg["classical"]["warmup_steps"])
 CLASSICAL_MAX_EPOCHS = int(_cfg["classical"]["max_epochs"])
+CLASSICAL_EMA_DECAY_MAIN = float(_cfg["classical"]["ema_decay_main"])
+CLASSICAL_EMA_DECAY_SPECIALIST = float(_cfg["classical"]["ema_decay_specialist"])
+CLASSICAL_USE_AMP = bool(_cfg["classical"]["use_amp"])
+CLASSICAL_COSINE_T_MAX = int(_cfg["classical"]["cosine_t_max"])
+CLASSICAL_CHECKPOINT_DIR = PROJECT_ROOT / _cfg["classical"]["checkpoint_dir"]
 CLASSICAL_ENSEMBLE_WEIGHTS = {
     k: float(v) for k, v in _cfg["classical"]["ensemble_weights"].items()
 }
