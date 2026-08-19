@@ -11,8 +11,11 @@ shape ``(B, 3, H, W)``.  Each slot is encoded by the same backbone and the
 inference time the group logits are averaged (or rank-mean'd across slots) to
 emit the final 12 probabilities per study.
 
-The module is torch-optional: importing does not require torch, but
-instantiating ``KneeModel`` does (used on the GPU side only).
+All three classes (``DINOv2Backbone``, ``PerDiagnosisHead``, ``KneeModel``)
+inherit from ``torch.nn.Module`` so PyTorch optimizers, ``.to(device)``,
+``state_dict``, and EMA all work correctly.
+
+The module is torch-optional at import time so tests can run without GPU.
 """
 
 from __future__ import annotations
@@ -45,6 +48,9 @@ def _import_torch():
     return torch, nn
 
 
+_TORCH, _NN = _import_torch()
+
+
 def _import_transformers():
     try:
         from transformers import AutoModel
@@ -55,7 +61,7 @@ def _import_transformers():
     return AutoModel
 
 
-class DINOv2Backbone:
+class DINOv2Backbone(_NN.Module):
     """Thin wrapper around the HuggingFace DINOv2 model.
 
     Forward returns the CLS token (``[B, D]``) and per-patch features
@@ -69,7 +75,7 @@ class DINOv2Backbone:
         freeze: bool = True,
         image_size: int = CLASSICAL_IMAGE_SIZE,
     ):
-        torch, _ = _import_torch()
+        super().__init__()
         AutoModel = _import_transformers()
         self.model_name = model_name
         self.image_size = image_size
@@ -86,39 +92,51 @@ class DINOv2Backbone:
 
     def encode(self, pixel_values):
         """Run the backbone and return (cls, patch_tokens)."""
-        torch, _ = _import_torch()
         outputs = self.model(pixel_values=pixel_values)
         last_hidden = outputs.last_hidden_state
         cls = last_hidden[:, 0]
         patches = last_hidden[:, 1:]
         return cls, patches
 
+    def forward(self, pixel_values):
+        return self.encode(pixel_values)
 
-class PerDiagnosisHead:
-    """Light per-diagnosis attention head.
 
-    Each diagnosis gets its own attention query over the patch tokens,
-    producing a single logit per diagnosis from the weighted patch sum.
+class PerDiagnosisHead(_NN.Module):
+    """Per-diagnosis attention head over patch tokens.
+
+    Each diagnosis has a single learned query vector ``q_n`` that is used
+    twice:
+      1. As the attention key against patch tokens (per-diagnosis attention
+         over the spatial patches).
+      2. As the output projection (dot-product between the context vector
+         and ``q_n``) to emit a single logit per diagnosis.
 
     Output shape: ``[B, 12]`` (one logit per LABEL_COLUMNS).
+
+    Forward signature: ``forward(patch_tokens)`` where ``patch_tokens`` has
+    shape ``[B, P, D]`` (batch, patches, hidden).
     """
 
     def __init__(self, hidden_size: int, n_diagnoses: int = len(LABEL_COLUMNS)):
-        torch, nn = _import_torch()
+        super().__init__()
         self.n_diagnoses = n_diagnoses
-        self.queries = nn.Parameter(torch.randn(n_diagnoses, hidden_size) * 0.02)
-        self.scale = nn.Parameter(torch.tensor(float(hidden_size) ** -0.5))
-        self.bias = nn.Parameter(torch.zeros(n_diagnoses))
+        self.hidden_size = hidden_size
+        self.queries = _NN.Parameter(_TORCH.randn(n_diagnoses, hidden_size) * 0.02)
+        self.scale = _NN.Parameter(_TORCH.tensor(float(hidden_size) ** -0.5))
+        self.bias = _NN.Parameter(_TORCH.zeros(n_diagnoses))
 
-    def __call__(self, patch_tokens):
-        torch, _ = _import_torch()
-        attn = torch.einsum("bpd,d->bdp", patch_tokens, self.queries) * self.scale
-        weights = torch.softmax(attn, dim=-1)
-        logits = torch.einsum("bdp,bpd->bd", weights, patch_tokens) + self.bias
+    def forward(self, patch_tokens):
+        attn_scores = _TORCH.einsum(
+            "bpd,nd->bnp", patch_tokens, self.queries
+        ) * self.scale
+        weights = _TORCH.softmax(attn_scores, dim=-1)
+        context = _TORCH.einsum("bnp,bpd->bnd", weights, patch_tokens)
+        logits = _TORCH.einsum("bnd,nd->bn", context, self.queries) + self.bias
         return logits
 
 
-class KneeModel:
+class KneeModel(_NN.Module):
     """Composite model: DINOv2 backbone + per-diagnosis head.
 
     The model is shared across all 5 slots — only the image input changes
@@ -133,6 +151,7 @@ class KneeModel:
         image_size: int = CLASSICAL_IMAGE_SIZE,
         freeze_backbone: bool = True,
     ):
+        super().__init__()
         self.backbone = DINOv2Backbone(
             model_name=backbone_name,
             freeze=freeze_backbone,
@@ -146,6 +165,9 @@ class KneeModel:
         _, patches = self.backbone.encode(pixel_values)
         return self.head(patches)
 
+    def forward(self, pixel_values):
+        return self.encode_slot(pixel_values)
+
     def parameter_groups(
         self,
         lr: float = CLASSICAL_LR,
@@ -156,8 +178,7 @@ class KneeModel:
         Use with ``torch.optim.AdamW`` so the head learns faster than the
         (possibly frozen) backbone.
         """
-        torch, _ = _import_torch()
-        head_params = list(self.head.parameters()) if hasattr(self.head, "parameters") else []
+        head_params = list(self.head.parameters())
         backbone_params = [
             p for p in self.backbone.model.parameters() if p.requires_grad
         ]
