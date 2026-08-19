@@ -127,3 +127,55 @@ def test_persist_split_roundtrip(tmp_path):
     assert len(train_loaded) == len(train_df)
     assert len(val_loaded) == len(val_df)
     assert paths["train"].exists() and paths["val"].exists()
+
+
+def test_make_split_isolates_nan_reports():
+    """Two NaN-report studies must get distinct group IDs (not merged
+    into one shared sentinel) so they are allowed to land on different
+    sides of the split."""
+    from src.data.splits import _build_group_ids
+
+    rows = [
+        {"StudyInstanceUID": "a", "Report": np.nan, **{col: np.nan for col in LABEL_COLUMNS}},
+        {"StudyInstanceUID": "b", "Report": np.nan, **{col: np.nan for col in LABEL_COLUMNS}},
+        {"StudyInstanceUID": "c", "Report": "real report", **{col: np.nan for col in LABEL_COLUMNS}},
+    ]
+    df = pd.DataFrame(rows)
+
+    group_ids = _build_group_ids(df, "Report").tolist()
+    assert group_ids[0] != group_ids[1], (
+        f"NaN studies merged into one group: ids={group_ids}"
+    )
+    assert group_ids[0] != group_ids[2]
+    assert group_ids[1] != group_ids[2]
+
+
+def test_make_split_allows_nan_studies_on_different_sides():
+    """With enough NaN studies, the splitter can place them on opposite
+    sides (the bug prevented this by forcing them into one group)."""
+    rows = []
+    for i in range(20):
+        rows.append({
+            "StudyInstanceUID": f"nan_{i}",
+            "Report": np.nan,
+            **{col: np.nan for col in LABEL_COLUMNS},
+        })
+    rows.append({
+        "StudyInstanceUID": "real_0",
+        "Report": "some report text",
+        **{col: np.nan for col in LABEL_COLUMNS},
+    })
+
+    train_df, val_df = make_split(
+        pd.DataFrame(rows),
+        val_frac=0.5,
+        seed=42,
+        reserve_gold_to_val=False,
+    )
+
+    train_nans = {uid for uid in train_df["StudyInstanceUID"] if uid.startswith("nan_")}
+    val_nans = {uid for uid in val_df["StudyInstanceUID"] if uid.startswith("nan_")}
+    assert len(train_nans) > 0 and len(val_nans) > 0, (
+        f"All NaN studies landed on one side — "
+        f"train={len(train_nans)}, val={len(val_nans)}"
+    )

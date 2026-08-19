@@ -27,12 +27,43 @@ def _normalize_report(text: str | float) -> str:
 
     Whitespace is collapsed and the text is case-folded so trivial formatting
     differences do not split a duplicate-report group into separate groups.
-    NaN reports become a sentinel so each NaN becomes its own single-study
-    group (it cannot leak across the split because there is only one of them).
+
+    NaN reports are pre-substituted upstream by ``make_split`` with a unique
+    sentinel (``<NAN_REPORT_<index>>``) so each missing-report study gets
+    its own group. By the time we get here, no row should have a NaN
+    ``text`` — but the NaN branch is kept as defense-in-depth and returns
+    a sentinel string (not NaN) so downstream ``category`` encoding
+    cannot blow up.
     """
     if text is None or (isinstance(text, float) and np.isnan(text)):
         return "<NAN_REPORT>"
     return " ".join(str(text).split()).casefold()
+
+
+def _isolate_nan_reports(df: pd.DataFrame, group_col: str) -> None:
+    """Replace NaN reports in-place with unique sentinels.
+
+    Two NaN-report studies therefore produce two distinct normalized
+    strings, and the splitter treats them as two distinct groups rather
+    than merging them into one.
+    """
+    nan_mask = df[group_col].isna()
+    if nan_mask.any():
+        nan_indices = df.index[nan_mask].tolist()
+        df.loc[nan_mask, group_col] = [
+            f"<NAN_REPORT_{i}>" for i in nan_indices
+        ]
+
+
+def _build_group_ids(df: pd.DataFrame, group_col: str) -> pd.Series:
+    """Compute integer group IDs for each row, isolating NaN groups.
+
+    Mutates ``df`` in place to substitute NaN values in ``group_col`` with
+    unique sentinels, then returns the resulting integer group IDs.
+    """
+    _isolate_nan_reports(df, group_col)
+    normalized = df[group_col].map(_normalize_report)
+    return normalized.astype("category").cat.codes
 
 
 def make_split(
@@ -63,9 +94,7 @@ def make_split(
         raise ValueError(f"val_frac must be in (0, 1), got {val_frac}")
 
     work = train_df.copy()
-    work["_group_id"] = (
-        work[group_col].map(_normalize_report).astype("category").cat.codes
-    )
+    work["_group_id"] = _build_group_ids(work, group_col).to_numpy()
 
     if reserve_gold_to_val:
         gold_mask = work[LABEL_COLUMNS[0]].notna()
