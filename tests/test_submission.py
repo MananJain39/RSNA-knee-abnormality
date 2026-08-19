@@ -50,3 +50,46 @@ def test_submission_rejects_out_of_range_values(tmp_path):
     predictions.loc[0, LABEL_COLUMNS[0]] = 1.1
     with pytest.raises(ValueError, match="outside"):
         SubmissionWriter().write(predictions, tmp_path / "submission.csv")
+
+
+def test_submission_aligns_with_sample_order(tmp_path):
+    sample = pd.DataFrame({
+        "StudyInstanceUID": ["study_a", "study_c", "study_b"],
+        **{label: [0.0] * 3 for label in LABEL_COLUMNS},
+    })
+    sample_path = tmp_path / "sample.csv"
+    sample.to_csv(sample_path, index=False)
+
+    predictions = pd.DataFrame({
+        "StudyInstanceUID": ["study_b", "study_a", "study_c"],
+        **{label: [0.1, 0.2, 0.3] for label in LABEL_COLUMNS},
+    })
+    path = SubmissionWriter().write(
+        predictions,
+        tmp_path / "submission.csv",
+        sample_submission_path=sample_path,
+    )
+    assert pd.read_csv(path)["StudyInstanceUID"].tolist() == [
+        "study_a", "study_c", "study_b",
+    ]
+
+
+def test_submission_handles_predictions_not_in_sample(tmp_path):
+    """UIDs missing from the sample submission get appended at the end."""
+    sample = pd.DataFrame({
+        "StudyInstanceUID": ["study_a"],
+        **{label: [0.0] for label in LABEL_COLUMNS},
+    })
+    sample_path = tmp_path / "sample.csv"
+    sample.to_csv(sample_path, index=False)
+
+    predictions = pd.DataFrame({
+        "StudyInstanceUID": ["study_b", "study_a"],
+        **{label: [0.5, 0.5] for label in LABEL_COLUMNS},
+    })
+    path = SubmissionWriter().write(
+        predictions,
+        tmp_path / "submission.csv",
+        sample_submission_path=sample_path,
+    )
+    assert pd.read_csv(path)["StudyInstanceUID"].tolist() == ["study_a", "study_b"]
