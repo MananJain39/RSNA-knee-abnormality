@@ -183,8 +183,9 @@ class ClassicalTrainer:
             schedulers=[warmup, cosine],
             milestones=[CLASSICAL_WARMUP_STEPS],
         )
-        scaler = torch.cuda.amp.GradScaler(
-            enabled=CLASSICAL_USE_AMP and self.device.type == "cuda"
+        scaler = torch.amp.GradScaler(
+            "cuda",
+            enabled=CLASSICAL_USE_AMP and self.device.type == "cuda",
         )
         ema = _EMA(model, self._ema_decay(run_name))
         start_epoch, best = self._resume(model, ema)
@@ -246,7 +247,7 @@ class ClassicalTrainer:
         optimizer.zero_grad(set_to_none=True)
         for step, batch in enumerate(loader):
             slots, labels, weights, mask = self._to_tensors(batch)
-            with torch.cuda.amp.autocast(enabled=scaler.is_enabled()):
+            with torch.amp.autocast("cuda", enabled=scaler.is_enabled()):
                 logits = self._forward_studies(model, slots, mask)
                 loss = self._weighted_bce(logits, labels, weights) / CLASSICAL_GRAD_ACCUM_STEPS
             scaler.scale(loss).backward()
