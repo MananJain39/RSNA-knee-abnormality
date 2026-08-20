@@ -1,5 +1,6 @@
 """Configuration constants and paths loaded from configs/default.yaml."""
 
+import os
 from pathlib import Path
 
 import yaml
@@ -39,7 +40,7 @@ LLM_MAX_RETRIES = _cfg["extraction"]["llm"]["max_retries"]
 VALIDATION_THRESHOLD = _cfg["validation"]["threshold"]
 VALIDATION_GOLD_COMPARISON = _cfg["validation"]["gold_comparison"]
 
-DICOM_DIR = PROJECT_ROOT / _cfg["imaging"]["dicom_dir"]
+DICOM_DIR = Path(os.environ.get("RSNA_DICOM_DIR", str(PROJECT_ROOT / _cfg["imaging"]["dicom_dir"])))
 TARGET_SHAPE = tuple(_cfg["imaging"]["target_shape"])
 NORMALIZATION_METHOD = _cfg["imaging"]["normalization"]
 
