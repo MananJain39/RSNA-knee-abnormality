@@ -39,6 +39,7 @@ data/*
 # Never commit competition MRI/DICOM data
 data/raw/train_series/
 data/raw/test_series/
+data/local_dicoms/
 *.dcm
 *.nii
 *.nii.gz
