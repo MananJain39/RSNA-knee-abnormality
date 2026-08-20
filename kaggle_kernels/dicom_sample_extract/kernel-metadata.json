@@ -1,0 +1,14 @@
+{
+  "id": "mananjain39/rsna-knee-dicom-sample-extract",
+  "title": "RSNA Knee - 50 study DICOM sample",
+  "code_file": "extract.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "competition_sources": [
+    "rsna-knee-abnormality-detection"
+  ],
+  "dataset_sources": []
+}
