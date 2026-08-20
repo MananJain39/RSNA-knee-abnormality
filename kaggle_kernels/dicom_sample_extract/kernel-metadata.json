@@ -1,6 +1,6 @@
 {
   "id": "mananjain39/rsna-knee-dicom-sample-extract",
-  "title": "RSNA Knee - 50 study DICOM sample",
+  "title": "RSNA Knee DICOM Sample Extract",
   "code_file": "extract.ipynb",
   "language": "python",
   "kernel_type": "notebook",
