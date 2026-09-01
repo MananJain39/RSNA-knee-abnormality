@@ -11,11 +11,15 @@ and can be blended with the main branch via ``ensemble.rank_mean_logits``.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pandas as pd
 
-from src.classical.dinov2_base import KneeModel
 from src.config import CLASSICAL_SPECIALIST_BACKBONE
 from src.imaging.clustering import load_clusters, majority_cluster_per_study
+
+if TYPE_CHECKING:
+    from src.classical.dinov2_base import KneeModel
 
 
 def make_specialist(cluster_id: int, image_size: int) -> KneeModel:
@@ -25,6 +29,10 @@ def make_specialist(cluster_id: int, image_size: int) -> KneeModel:
     default) to keep the cluster-level training cost in check; with K≈3-5
     clusters the total param count stays well below the main branch.
     """
+    # Keep routing/filter helpers torch-free; load the optional model stack only
+    # when a caller actually requests a specialist instance.
+    from src.classical.dinov2_base import KneeModel
+
     return KneeModel(
         backbone_name=CLASSICAL_SPECIALIST_BACKBONE,
         image_size=image_size,

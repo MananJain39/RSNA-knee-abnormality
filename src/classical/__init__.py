@@ -1,46 +1,45 @@
-"""Classical training and inference pipeline.
+"""Public classical-pipeline API with lazy model imports.
 
-Re-exports the public surface so callers can do
-``from src.classical import KneeMRIDataset, ClassicalTrainer, ...``
-without knowing which submodule each symbol lives in.
+Dataset, collation, loss, and submission utilities are intentionally usable on
+CPU-only machines. Model/trainer symbols load only when requested, so a data
+contract check does not require the optional ``classical`` dependency extra.
 """
 
-from src.classical.cluster_specialist import (
-    filter_train_rows_for_cluster,
-    make_specialist,
-    specialist_router,
-)
-from src.classical.collate import collate_batch
-from src.classical.dataset import (
-    KneeMRIDataset,
-    build_default_volume_index,
-)
-from src.classical.dinov2_base import (
-    DINOv2Backbone,
-    KneeModel,
-    PerDiagnosisHead,
-)
-from src.classical.ensemble import rank_mean_logits, to_probabilities
-from src.classical.inference import ClassicalPredictor
-from src.classical.loss import confidence_weighted_bce
-from src.classical.submission import SubmissionWriter
-from src.classical.trainer import ClassicalTrainer, TrainResult
+from __future__ import annotations
 
-__all__ = [
-    "DINOv2Backbone",
-    "KneeModel",
-    "PerDiagnosisHead",
-    "KneeMRIDataset",
-    "build_default_volume_index",
-    "collate_batch",
-    "confidence_weighted_bce",
-    "filter_train_rows_for_cluster",
-    "make_specialist",
-    "rank_mean_logits",
-    "specialist_router",
-    "to_probabilities",
-    "ClassicalPredictor",
-    "ClassicalTrainer",
-    "SubmissionWriter",
-    "TrainResult",
-]
+from importlib import import_module
+
+_EXPORTS = {
+    "DINOv2Backbone": ("src.classical.dinov2_base", "DINOv2Backbone"),
+    "KneeModel": ("src.classical.dinov2_base", "KneeModel"),
+    "PerDiagnosisHead": ("src.classical.dinov2_base", "PerDiagnosisHead"),
+    "KneeMRIDataset": ("src.classical.dataset", "KneeMRIDataset"),
+    "build_default_volume_index": ("src.classical.dataset", "build_default_volume_index"),
+    "collate_batch": ("src.classical.collate", "collate_batch"),
+    "confidence_weighted_bce": ("src.classical.loss", "confidence_weighted_bce"),
+    "filter_train_rows_for_cluster": (
+        "src.classical.cluster_specialist",
+        "filter_train_rows_for_cluster",
+    ),
+    "make_specialist": ("src.classical.cluster_specialist", "make_specialist"),
+    "specialist_router": ("src.classical.cluster_specialist", "specialist_router"),
+    "rank_mean_logits": ("src.classical.ensemble", "rank_mean_logits"),
+    "to_probabilities": ("src.classical.ensemble", "to_probabilities"),
+    "ClassicalPredictor": ("src.classical.inference", "ClassicalPredictor"),
+    "ClassicalTrainer": ("src.classical.trainer", "ClassicalTrainer"),
+    "SubmissionWriter": ("src.classical.submission", "SubmissionWriter"),
+    "TrainResult": ("src.classical.trainer", "TrainResult"),
+}
+
+
+def __getattr__(name: str):
+    try:
+        module_name, symbol_name = _EXPORTS[name]
+    except KeyError as exc:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from exc
+    value = getattr(import_module(module_name), symbol_name)
+    globals()[name] = value
+    return value
+
+
+__all__ = list(_EXPORTS)
