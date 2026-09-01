@@ -79,6 +79,8 @@ def normalize_laterality(
         return pixel_array
 
     if anatomical_plane in ("Coronal", "Axial"):
-        return np.fliplr(pixel_array)
+        # Images may be one slice (H, W) or a whole volume (N, H, W).
+        # In both cases the patient left/right direction is the final axis.
+        return np.flip(pixel_array, axis=-1)
 
     return pixel_array

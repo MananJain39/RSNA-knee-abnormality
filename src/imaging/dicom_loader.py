@@ -86,6 +86,7 @@ def get_series_metadata(
         "modality": str(ds.Modality),
         "transfer_syntax": str(ds.file_meta.TransferSyntaxUID),
         "n_slices": len(dicom_files),
+        "laterality": str(ds.get("Laterality", "")) or None,
     }
 
 
