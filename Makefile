@@ -1,4 +1,4 @@
-.PHONY: setup install test lint format extract-labels validate clean
+.PHONY: setup install test lint format extract-labels validate build-split preprocess-volumes evaluate-main probe-sample retrieve-sample clean
 
 PYTHON = /home/manan/.venv/bin/python3
 PIP = $(PYTHON) -m pip
@@ -26,6 +26,21 @@ extract-labels-llm:
 
 validate:
 	$(PYTHON) scripts/validate_labels.py
+
+build-split:
+	$(PYTHON) scripts/build_classical_split.py
+
+preprocess-volumes:
+	$(PYTHON) scripts/preprocess_volumes.py --help
+
+evaluate-main:
+	$(PYTHON) scripts/evaluate_classical.py --help
+
+probe-sample:
+	$(PYTHON) scripts/probe_sample_architecture.py
+
+retrieve-sample:
+	$(PYTHON) scripts/retrieve_sample_data.py
 
 profile-data:
 	$(PYTHON) -c "from src.data.loader import load_train, load_train_series; \
