@@ -12,6 +12,7 @@ the competition and serve as the held-out benchmark.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
 
 import numpy as np
@@ -72,6 +73,7 @@ def make_split(
     seed: int = 42,
     group_col: str = "Report",
     reserve_gold_to_val: bool = True,
+    study_uids: Iterable[str] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Split studies into train/val respecting report groups.
 
@@ -83,6 +85,12 @@ def make_split(
             guarantees the row lands on the same split side.
         reserve_gold_to_val: If True, gold-labeled studies are forced to the
             validation side so they are never used for training targets.
+        study_uids: Optional iterable of StudyInstanceUIDs to restrict the
+            corpus to before splitting. Useful for sample/dev-set splits
+            (e.g. ``make_split(study_uids=manifest["study_uids"])``). When
+            provided, only studies whose UID appears in this iterable are
+            considered; UIDs that are not found in ``train_df`` raise an
+            ``AssertionError`` so we surface typos and stale IDs early.
 
     Returns:
         (train_df, val_df) — disjoint subsets of ``train_df``'s StudyInstanceUIDs.
@@ -94,6 +102,19 @@ def make_split(
         raise ValueError(f"val_frac must be in (0, 1), got {val_frac}")
 
     work = train_df.copy()
+
+    if study_uids is not None:
+        uid_set = set(study_uids)
+        missing = uid_set - set(work["StudyInstanceUID"])
+        if missing:
+            raise AssertionError(
+                f"{len(missing)} study_uids not found in train_df "
+                f"(e.g. {sorted(missing)[:3]})"
+            )
+        work = work[work["StudyInstanceUID"].isin(uid_set)].reset_index(drop=True)
+        if work.empty:
+            raise ValueError("study_uids filter produced an empty corpus")
+
     work["_group_id"] = _build_group_ids(work, group_col).to_numpy()
 
     if reserve_gold_to_val:
