@@ -6,12 +6,14 @@ import pytest
 from src.imaging.preprocessing import (
     create_25d_groups,
     extract_middle_slices,
+    from_uint8,
     normalize,
     percentile_normalize_series,
     physical_crop,
     resize,
     sample_central_band,
     to_tensor,
+    to_uint8,
 )
 
 
@@ -19,6 +21,28 @@ def test_normalize_minmax():
     image = np.array([0, 50, 100], dtype=np.float32)
     result = normalize(image, method="minmax")
     np.testing.assert_array_almost_equal(result, [0.0, 0.5, 1.0])
+
+
+def test_uint8_round_trip_error_bounded():
+    rng = np.random.default_rng(0)
+    volume = rng.random((4, 16, 16)).astype(np.float32)
+    restored = from_uint8(to_uint8(volume))
+    assert restored.dtype == np.float32
+    max_err = float(np.abs(restored - volume).max())
+    # Half an LSB of an 8-bit scale: 0.5 / 255.
+    assert max_err <= 0.5 / 255 + 1e-6
+
+
+def test_uint8_rejects_out_of_range():
+    with pytest.raises(ValueError):
+        to_uint8(np.array([-0.1, 0.5], dtype=np.float32))
+    with pytest.raises(ValueError):
+        to_uint8(np.array([0.5, 1.5], dtype=np.float32))
+
+
+def test_uint8_quantization_size_gain():
+    volume = np.ones((32, 336, 336), dtype=np.float32)
+    assert to_uint8(volume).nbytes == volume.nbytes // 4
 
 
 def test_normalize_minmax_constant():
