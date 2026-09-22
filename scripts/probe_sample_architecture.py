@@ -50,6 +50,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--split-dir", type=Path, default=DEFAULT_SPLIT_DIR)
     parser.add_argument("--labels-csv", type=Path, default=DEFAULT_LABELS)
     parser.add_argument("--with-model", action="store_true")
+    parser.add_argument("--max-studies", type=int, default=None,
+                        help="Validate on only the first N studies (memory-safe).")
     parser.add_argument("--model-name", default=CLASSICAL_MAIN_BACKBONE)
     parser.add_argument("--device", default=None)
     parser.add_argument("--output-json", type=Path, default=None)
@@ -191,6 +193,8 @@ def _model_contract(batch, model_name: str, device_name: str | None) -> dict:
 def main() -> None:
     args = _parse_args()
     study_uids = _load_study_uids(args.split_dir)
+    if args.max_studies is not None:
+        study_uids = study_uids[: args.max_studies]
     labels = _labels_with_confidence(args.labels_csv, study_uids)
     volumes = _load_volume_index(args.volumes_dir, study_uids)
     batch, report = _data_contract(study_uids, labels, volumes)
