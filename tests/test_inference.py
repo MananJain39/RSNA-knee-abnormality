@@ -29,7 +29,8 @@ class _Dataset:
         self.study_uid = study_uids[0]
 
     def __getitem__(self, index):
-        return {SLOT_NAMES[0]: np.ones((1, 3, 4, 4), dtype=np.float32)}, None, None
+        value = 1.0 if self.study_uid == "s1" else 2.0
+        return {SLOT_NAMES[0]: np.full((1, 3, 4, 4), value, dtype=np.float32)}, None, None
 
 
 def _collate(samples):
@@ -39,7 +40,12 @@ def _collate(samples):
 
 
 def _write_checkpoint(path):
-    torch.save({"model_state_dict": _TinyModel().state_dict(), "ema_state_dict": None}, path)
+    model = _TinyModel()
+    with torch.no_grad():
+        model.layer.weight.zero_()
+        model.layer.weight[:, 0] = 1.0
+        model.layer.bias.zero_()
+    torch.save({"model_state_dict": model.state_dict(), "ema_state_dict": None}, path)
 
 
 def _predictor():
@@ -100,3 +106,17 @@ def test_predictor_returns_values_in_0_1_range(tmp_path):
     _write_checkpoint(main)
     out = _predictor().predict_studies({"main": main}, ["s1"], {}, pd.DataFrame(), _assignments())
     assert ((out[LABEL_COLUMNS] >= 0) & (out[LABEL_COLUMNS] <= 1)).all().all()
+
+
+def test_main_only_predictions_preserve_study_ordering(tmp_path):
+    """A one-model path must not rank each study in isolation."""
+    main = tmp_path / "main.pt"
+    _write_checkpoint(main)
+
+    out = _predictor().predict_studies(
+        {"main": main}, ["s1", "s2"], {}, pd.DataFrame(), _assignments()
+    )
+
+    first = out.loc[out["StudyInstanceUID"] == "s1", LABEL_COLUMNS].to_numpy()
+    second = out.loc[out["StudyInstanceUID"] == "s2", LABEL_COLUMNS].to_numpy()
+    assert np.all(second > first)
