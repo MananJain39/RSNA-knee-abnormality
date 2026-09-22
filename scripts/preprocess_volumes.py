@@ -23,6 +23,7 @@ from src.data.loader import load_train_series  # noqa: E402
 from src.imaging.clustering import _syntax_family  # noqa: E402
 from src.imaging.dicom_loader import get_series_metadata, load_series  # noqa: E402
 from src.imaging.pipeline import preprocess_series  # noqa: E402
+from src.imaging.preprocessing import to_uint8  # noqa: E402
 from src.imaging.slot_builder import build_slots_for_study  # noqa: E402
 
 
@@ -34,6 +35,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--metadata-output", type=Path, required=True)
     parser.add_argument("--max-studies", type=int, default=None)
     parser.add_argument("--image-size", type=int, default=336)
+    parser.add_argument(
+        "--storage-format",
+        choices=["uint8", "float32"],
+        default="uint8",
+        help=(
+            "Slot storage: 'uint8' writes compressed .npz at 1/4 the size of "
+            "float32 .npy (default; keeps 1,000 studies under the 20 GB Kaggle "
+            "dataset cap). 'float32' writes legacy .npy for backward compatibility."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -74,7 +85,12 @@ def main() -> None:
                 volume = load_series(study_uid, slot.series_uid, args.dicom_dir)
                 processed = preprocess_series(volume, meta, slot.anatomical_plane, args.image_size)
                 study_dir.mkdir(parents=True, exist_ok=True)
-                np.save(study_dir / f"{slot_name}.npy", processed)
+                if args.storage_format == "uint8":
+                    np.savez_compressed(
+                        study_dir / f"{slot_name}.npz", volume=to_uint8(processed)
+                    )
+                else:
+                    np.save(study_dir / f"{slot_name}.npy", processed)
                 series_row = series_df.loc[
                     (series_df["StudyInstanceUID"] == study_uid)
                     & (series_df["SeriesInstanceUID"] == slot.series_uid)
