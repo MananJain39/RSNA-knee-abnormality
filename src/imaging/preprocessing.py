@@ -74,6 +74,27 @@ def percentile_normalize_series(
     return ((clipped - p_low) / (p_high - p_low)).astype(np.float32)
 
 
+def to_uint8(volume: np.ndarray) -> np.ndarray:
+    """Quantize a float32 ``[0, 1]`` volume to uint8 for compact storage.
+
+    Halves disk size vs float32 and, combined with ``np.savez_compressed``,
+    keeps the full 1,000-study corpus within Kaggle's 20 GB dataset cap.
+    Maximum round-trip error is half an LSB (0.5/255 ~ 0.002), far below
+    the 1st-99th percentile windowing already applied upstream.
+    """
+    volume = np.asarray(volume, dtype=np.float32)
+    if volume.min() < 0.0 or volume.max() > 1.0:
+        raise ValueError(
+            f"to_uint8 expects values in [0, 1], got [{volume.min()}, {volume.max()}]"
+        )
+    return np.round(volume * 255.0).astype(np.uint8)
+
+
+def from_uint8(volume: np.ndarray) -> np.ndarray:
+    """Restore a uint8-quantized volume to float32 ``[0, 1]``."""
+    return (np.asarray(volume, dtype=np.float32) / 255.0)
+
+
 def to_tensor(
     image: np.ndarray,
     channel_first: bool = True,
