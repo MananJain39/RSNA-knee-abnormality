@@ -168,3 +168,39 @@ def test_build_default_volume_index_roundtrip(tmp_path):
     idx = build_default_volume_index(tmp_path)
     assert "study1" in idx
     assert set(idx["study1"].keys()) == {"Sagittal_Fluid", "Sagittal_Structural"}
+
+
+def test_build_default_volume_index_reads_uint8_npz(tmp_path):
+    from src.imaging.preprocessing import to_uint8
+
+    study_dir = tmp_path / "study2"
+    study_dir.mkdir()
+    originals = {}
+    for slot in SLOT_NAMES[:2]:
+        originals[slot] = _fake_volume(20)
+        np.savez_compressed(
+            study_dir / f"{slot}.npz", volume=to_uint8(originals[slot])
+        )
+
+    idx = build_default_volume_index(tmp_path)
+    assert "study2" in idx
+    for slot in SLOT_NAMES[:2]:
+        loaded = idx["study2"][slot]
+        assert loaded.dtype == np.float32
+        max_err = float(np.abs(loaded - originals[slot]).max())
+        assert max_err <= 0.5 / 255 + 1e-6
+
+
+def test_build_default_volume_index_npz_overrides_npy(tmp_path):
+    from src.imaging.preprocessing import to_uint8
+
+    study_dir = tmp_path / "study3"
+    study_dir.mkdir()
+    old = _fake_volume(20)
+    new = _fake_volume(20)
+    np.save(study_dir / "Sagittal_Fluid.npy", old)
+    np.savez_compressed(study_dir / "Sagittal_Fluid.npz", volume=to_uint8(new))
+
+    idx = build_default_volume_index(tmp_path)
+    max_err = float(np.abs(idx["study3"]["Sagittal_Fluid"] - new).max())
+    assert max_err <= 0.5 / 255 + 1e-6
