@@ -19,7 +19,7 @@ from src.classical.cluster_specialist import make_specialist, specialist_router
 from src.classical.collate import Batch, collate_batch
 from src.classical.dataset import KneeMRIDataset
 from src.classical.dinov2_base import KneeModel
-from src.classical.ensemble import rank_mean_logits
+from src.classical.ensemble import rank_mean_logits, to_probabilities
 from src.config import CLASSICAL_ENSEMBLE_WEIGHTS, CLASSICAL_IMAGE_SIZE, LABEL_COLUMNS
 from src.imaging.slot_builder import SLOT_NAMES
 
@@ -70,9 +70,16 @@ class ClassicalPredictor:
         records = []
         for study_uid in study_uids:
             main_logits = self._predict_one(main, study_uid, volume_index, labels_df)
-            branches = {"main": main_logits}
             specialist_path = self._specialist_path(model_paths, study_uid, cluster_assignments)
-            if specialist_path is not None:
+            if specialist_path is None:
+                # ``rank_mean_logits`` ranks studies within each branch.  At
+                # this point inference is one study at a time, so applying it
+                # to a main-only ``(1, 12)`` array turns every rank into zero
+                # and destroys the ordering needed by AUC.  One model needs
+                # no rank blend; sigmoid preserves its logit ordering.
+                scores = to_probabilities(main_logits)[0]
+            else:
+                branches = {"main": main_logits}
                 cluster_id = specialist_router(study_uid, cluster_assignments)
                 specialist = self._load_checkpoint(
                     specialist_path,
@@ -81,7 +88,7 @@ class ClassicalPredictor:
                 branches["specialist"] = self._predict_one(
                     specialist, study_uid, volume_index, labels_df
                 )
-            scores = rank_mean_logits(branches, CLASSICAL_ENSEMBLE_WEIGHTS)[0]
+                scores = rank_mean_logits(branches, CLASSICAL_ENSEMBLE_WEIGHTS)[0]
             records.append({"StudyInstanceUID": study_uid, **dict(zip(LABEL_COLUMNS, scores))})
         return pd.DataFrame(records, columns=["StudyInstanceUID", *LABEL_COLUMNS])
 
