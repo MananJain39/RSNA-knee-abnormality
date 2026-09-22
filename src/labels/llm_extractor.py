@@ -188,3 +188,46 @@ class LLMExtractor:
             iterator = reports
 
         return [self.extract(report) for report in iterator]
+
+    def extract_batch_parallel(
+        self,
+        items: list[tuple[str, str]],
+        on_result=None,
+        concurrency: int = 10,
+        show_progress: bool = True,
+    ) -> dict[str, LabelDict]:
+        """Extract labels for ``(uid, report)`` pairs with a thread pool.
+
+        Args:
+            items: (StudyInstanceUID, report_text) pairs.
+            on_result: Optional callback ``fn(uid, labels)`` invoked as each
+                report completes (used for incremental JSONL checkpointing).
+            concurrency: Number of worker threads hitting the API.
+            show_progress: tqdm progress bar toggle.
+
+        Returns:
+            Dict mapping uid to its LabelDict.
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        results: dict[str, LabelDict] = {}
+        iterator = items
+        if show_progress:
+            try:
+                from tqdm import tqdm
+                iterator = tqdm(items, desc="LLM extraction")
+            except ImportError:
+                pass
+
+        def _work(pair: tuple[str, str]) -> tuple[str, LabelDict]:
+            uid, report = pair
+            return uid, self.extract(report)
+
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            futures = {pool.submit(_work, pair): pair[0] for pair in iterator}
+            for future in as_completed(futures):
+                uid, labels = future.result()
+                results[uid] = labels
+                if on_result is not None:
+                    on_result(uid, labels)
+        return results
