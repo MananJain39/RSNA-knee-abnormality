@@ -61,6 +61,8 @@ class KneeMRIDataset:
         n_groups_per_slot: int = CLASSICAL_N_GROUPS_PER_SLOT,
         image_size: int = CLASSICAL_IMAGE_SIZE,
         group_size: int = 3,
+        augment: bool = False,
+        augmentation_config: dict | None = None,
     ):
         if not study_uids:
             raise ValueError("study_uids must be non-empty")
@@ -78,6 +80,13 @@ class KneeMRIDataset:
         self.n_groups_per_slot = n_groups_per_slot
         self.image_size = image_size
         self.group_size = group_size
+        self.augment = augment
+        self.augmentation_config = augmentation_config or {
+            "rotation_deg": 10.0,
+            "gamma_range": (0.8, 1.2),
+            "rescale_range": (0.95, 1.05),
+        }
+        self._rng = np.random.default_rng()
 
         self._label_cols = list(LABEL_COLUMNS)
         self._weight_cols = [f"{c}_conf" for c in self._label_cols]
@@ -88,6 +97,18 @@ class KneeMRIDataset:
     def __getitem__(self, idx: int) -> Sample:
         study_uid = self.study_uids[idx]
         slots = self._load_slots(study_uid)
+        
+        # Apply augmentation if enabled (training mode)
+        if self.augment and slots:
+            from src.classical.augmentation import augment_slots
+            slots = augment_slots(
+                slots,
+                rotation_deg=self.augmentation_config.get("rotation_deg", 10.0),
+                gamma_range=self.augmentation_config.get("gamma_range", (0.8, 1.2)),
+                rescale_range=self.augmentation_config.get("rescale_range", (0.95, 1.05)),
+                rng=self._rng,
+            )
+        
         labels, weights = self._load_labels_and_weights(study_uid)
         return slots, labels, weights
 
