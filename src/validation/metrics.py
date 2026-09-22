@@ -28,21 +28,40 @@ def macro_auc(
         label_columns = LABEL_COLUMNS
 
     auc_scores = []
+    skipped: list[str] = []
     for col in label_columns:
         if col in y_true.columns and col in y_pred.columns:
-            true_vals = y_true[col].values
-            pred_vals = y_pred[col].values
+            true_vals = y_true[col].values.astype(float)
+            pred_vals = y_pred[col].values.astype(float)
+
+            valid = np.isfinite(true_vals) & np.isfinite(pred_vals)
+            true_vals, pred_vals = true_vals[valid], pred_vals[valid]
 
             if len(np.unique(true_vals)) < 2:
+                skipped.append(col)
                 continue
 
             try:
                 auc = roc_auc_score(true_vals, pred_vals)
                 auc_scores.append(auc)
-            except ValueError:
-                continue
+            except ValueError as exc:
+                # roc_auc_score rejects graded (non-0/1) targets with
+                # "continuous format is not supported". This used to be
+                # swallowed per label, which made a mixed binary+graded
+                # validation set silently collapse to macro AUC 0.0.
+                raise ValueError(
+                    f"roc_auc_score failed for label '{col}': {exc}. "
+                    "If y_true contains graded (non-0/1) values, the AUC is "
+                    "undefined under the competition metric; evaluate against "
+                    "binary gold labels instead."
+                ) from exc
 
     if not auc_scores:
+        # Preserve the public metric contract for a genuinely constant label:
+        # it contributes no AUC and the macro over an all-constant selection
+        # is represented as 0.0.  The training kernel prevents the more
+        # dangerous mixed graded/binary case by restricting validation to the
+        # binary gold studies before calling this function.
         return 0.0
 
     return float(np.mean(auc_scores))
