@@ -51,6 +51,24 @@ data/local_dicoms/
 *.7z
 *.parquet
 
+# Preprocessed volume payloads (regenerated via scripts/preprocess_volumes.py)
+data/processed/volumes*/
+*.npy
+*.npz
+
+# Downloaded external label sources (reproducible via scripts/download_labels.py)
+data/external/*/
+!data/external/.gitkeep
+
+# =========================
+# Local tooling outputs
+# =========================
+graphify-out/cache/
+graphify-out/2026-*/
+session-*.md
+.opencode/plans/
+.codex/
+
 # =========================
 # Models / Checkpoints
 # =========================
