@@ -1,0 +1,16 @@
+{
+  "id": "mananjain39/rsna-knee-train-sample200",
+  "title": "RSNA Knee Train Sample200",
+  "code_file": "train_sample200.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "competition_sources": ["rsna-knee-abnormality-detection"],
+  "dataset_sources": [
+    "mananjain39/rsna-knee-processed-sample200",
+    "mananjain39/rsna-knee-labels-final",
+    "mananjain39/rsna-knee-repo-snapshot"
+  ]
+}
