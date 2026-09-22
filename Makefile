@@ -1,6 +1,6 @@
 .PHONY: setup install test lint format extract-labels validate build-split preprocess-volumes evaluate-main probe-sample retrieve-sample clean
 
-PYTHON = /home/manan/.venv/bin/python3
+PYTHON = /home/manan/dev/rsna-knee/.venv/bin/python
 PIP = $(PYTHON) -m pip
 
 setup:
