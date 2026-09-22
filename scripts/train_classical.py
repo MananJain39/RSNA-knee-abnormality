@@ -34,6 +34,7 @@ from src.config import (  # noqa: E402
     CLASSICAL_MAX_EPOCHS,
 )
 from src.data.splits import load_split  # noqa: E402
+from src.config import LABEL_COLUMNS  # noqa: E402
 from src.imaging.clustering import load_clusters, majority_cluster_per_study  # noqa: E402
 
 
@@ -97,6 +98,11 @@ def _parse_args() -> argparse.Namespace:
         default=None,
         help="Torch device string (default: auto cuda/cpu).",
     )
+    parser.add_argument(
+        "--no-augmentation",
+        action="store_true",
+        help="Disable data augmentation (default: enabled for training, disabled for validation).",
+    )
     return parser.parse_args()
 
 
@@ -139,8 +145,25 @@ def main() -> None:
     train_uids = train_df["StudyInstanceUID"].tolist()
     val_uids = val_df["StudyInstanceUID"].tolist()
 
-    train_ds = KneeMRIDataset(train_uids, labels_df, volume_index=volume_index)
-    val_ds = KneeMRIDataset(val_uids, labels_df, volume_index=volume_index)
+    # Validation AUC follows the competition metric, which is defined on
+    # BINARY gold labels. The val split intentionally holds all gold studies
+    # (Decision 10) plus graded-LLM non-gold studies; roc_auc_score rejects
+    # graded targets, so score only the gold side here.
+    gold_col = LABEL_COLUMNS[0]
+    val_gold_uids = val_df.loc[val_df[gold_col].notna(), "StudyInstanceUID"].tolist()
+    if not val_gold_uids:
+        sys.exit("Val split contains no gold studies; cannot compute gold AUC")
+    val_uids = val_gold_uids
+    print(f"  val restricted to gold studies for metric: {len(val_uids)} of {len(val_df)}")
+
+    train_ds = KneeMRIDataset(
+        train_uids, labels_df, volume_index=volume_index,
+        augment=not args.no_augmentation,
+    )
+    val_ds = KneeMRIDataset(
+        val_uids, labels_df, volume_index=volume_index,
+        augment=False,  # Never augment validation
+    )
 
     run_name = (
         "main"
