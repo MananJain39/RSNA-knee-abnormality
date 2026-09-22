@@ -215,9 +215,16 @@ def build_default_volume_index(studies_dir: Path | None = None) -> dict:
     """Load a disk-backed volume index from ``data/processed/volumes/``.
 
     Expected on disk:
+        studies_dir/<StudyInstanceUID>/<slot_name>.npz
+            uint8-quantized compressed volume (new default; ``volume`` key)
         studies_dir/<StudyInstanceUID>/<slot_name>.npy
-            each file is a 3D array (N_slices, H, W) of the preprocessed slot
+            legacy float32 volume (backward compatible)
+
+    uint8 files are restored to float32 ``[0, 1]`` on load, so downstream
+    code cannot tell the storage format apart.
     """
+    from src.imaging.preprocessing import from_uint8
+
     if studies_dir is None:
         studies_dir = PROCESSED_DATA_DIR / "volumes"
     studies_dir = Path(studies_dir)
@@ -229,9 +236,12 @@ def build_default_volume_index(studies_dir: Path | None = None) -> dict:
         if not study_dir.is_dir():
             continue
         per_study: dict = {}
-        for slot_path in study_dir.glob("*.npy"):
-            slot_name = slot_path.stem
-            per_study[slot_name] = np.load(slot_path)
+        for npy_path in study_dir.glob("*.npy"):
+            per_study[npy_path.stem] = np.load(npy_path)
+        for npz_path in study_dir.glob("*.npz"):
+            per_study[npz_path.stem] = from_uint8(
+                np.load(npz_path)["volume"]
+            )
         if per_study:
             out[study_dir.name] = per_study
     return out
