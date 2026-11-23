@@ -1,0 +1,14 @@
+{
+  "id": "mananjain39/rsna-knee-claude-infer",
+  "title": "rsna-knee-claude-infer",
+  "code_file": "infer_kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": ["mananjain39/rsna-knee-claude-models"],
+  "competition_sources": ["rsna-knee-abnormality-detection"],
+  "kernel_sources": []
+}

@@ -133,6 +133,9 @@ htmlcov/
 # =========================
 kaggle.json
 .kaggle/
+# Keep upload metadata, but continue excluding model checkpoint payloads.
+!kaggle/models/
+!kaggle/models/dataset-metadata.json
 
 # =========================
 # Temporary / Generated Files
