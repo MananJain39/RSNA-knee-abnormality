@@ -1,0 +1,61 @@
+== train.csv (4407, 14) | gold: 58 | reports null: 0
+
+== gold-58 positive rates
+ACL                 0.414
+MCL                 0.155
+Medial Meniscus     0.448
+Lateral Meniscus    0.397
+Medial OA           0.259
+Lateral OA          0.190
+PF OA               0.362
+Effusion            0.603
+Synovitis           0.466
+Baker's             0.207
+Contusion           0.328
+Fracture            0.310
+
+== report length chars: p5/p50/p95 [ 205  977 2452]
+duplicate report texts (rows): 177
+
+== language guess
+ lang
+en    1741
+es     729
+tr     546
+?      543
+el     321
+de     261
+nl     140
+pt      79
+fr      38
+it       9
+
+== series per study: {'count': 4407.0, 'mean': 5.53, 'std': 1.39, 'min': 3.0, '25%': 5.0, '50%': 5.0, '75%': 6.0, 'max': 14.0}
+Fluid==FatSup identical: 1.0
+studies having plane x fluid:
+ Anatomical_Plane  Fluid_Sensitive
+Axial             0                  0.194
+                  1                  1.000
+Coronal           0                  0.773
+                  1                  0.964
+Sagittal          0                  0.968
+                  1                  0.942
+multiple series in same slot (frac of slots): 0.136
+
+== previous labels_final vs gold (note: prev file overrides gold, so check report-derived conf instead)
+prev labels equal to gold on gold rows: 1.0 (1.0 => gold override, can't evaluate)
+
+== prev labels on non-gold: mean soft label
+ACL                 0.232
+MCL                 0.179
+Medial Meniscus     0.460
+Lateral Meniscus    0.223
+Medial OA           0.407
+Lateral OA          0.326
+PF OA               0.483
+Effusion            0.584
+Synovitis           0.338
+Baker's             0.357
+Contusion           0.260
+Fracture            0.182
+value 0.25 share (not-addressed?) {'ACL': 0.083, 'MCL': 0.101, 'Medial Meniscus': 0.055, 'Lateral Meniscus': 0.099, 'Medial OA': 0.2, 'Lateral OA': 0.242, 'PF OA': 0.171, 'Effusion': 0.098, 'Synovitis': 0.095, "Baker's": 0.481, 'Contusion': 0.234, 'Fracture': 0.429}
