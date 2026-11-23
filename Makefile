@@ -1,6 +1,6 @@
 .PHONY: setup install test lint format extract-labels validate build-split preprocess-volumes evaluate-main probe-sample retrieve-sample clean
 
-PYTHON = /home/manan/dev/rsna-knee/.venv/bin/python
+PYTHON ?= $(CURDIR)/.venv/bin/python
 PIP = $(PYTHON) -m pip
 
 setup:
@@ -10,7 +10,7 @@ install:
 	$(PIP) install pandas numpy scikit-learn pydicom openai pyyaml tqdm pytest
 
 test:
-	cd /home/manan/dev/rsna-knee && $(PYTHON) -m pytest tests/ -v
+	$(PYTHON) -m pytest tests/ -v
 
 lint:
 	$(PYTHON) -m ruff check src/ scripts/ tests/
