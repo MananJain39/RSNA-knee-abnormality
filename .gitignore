@@ -54,6 +54,12 @@ data/local_dicoms/
 
 # Preprocessed volume payloads (regenerated via scripts/preprocess_volumes.py)
 data/processed/volumes*/
+# Preserve lightweight sample200 provenance without volume payloads.
+!data/processed/volumes_sample200/
+data/processed/volumes_sample200/*
+!data/processed/volumes_sample200/manifest.json
+!data/processed/volumes_sample200/on_disk_uids.csv
+!data/processed/volumes_sample200/preprocessing_failures.csv
 *.npy
 *.npz
 
