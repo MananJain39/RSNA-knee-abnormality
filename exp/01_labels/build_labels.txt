@@ -1,0 +1,35 @@
+                  w=1.0 impSyn=False  w=1.0 impSyn=True  w=0.8 impSyn=False  w=0.8 impSyn=True  w=0.7 impSyn=False  w=0.7 impSyn=True  w=0.5 impSyn=False  w=0.5 impSyn=True
+ACL                            0.975              0.975               0.974              0.974               0.974              0.974               0.974              0.974
+MCL                            0.975              0.975               0.974              0.974               0.974              0.974               0.974              0.974
+Medial Meniscus                0.921              0.921               0.921              0.921               0.920              0.920               0.920              0.920
+Lateral Meniscus               0.871              0.871               0.870              0.870               0.869              0.869               0.869              0.869
+Medial OA                      0.919              0.919               0.923              0.923               0.923              0.923               0.923              0.923
+Lateral OA                     0.838              0.838               0.841              0.841               0.841              0.841               0.841              0.841
+PF OA                          0.889              0.889               0.887              0.887               0.887              0.887               0.887              0.887
+Effusion                       0.819              0.819               0.827              0.827               0.827              0.827               0.831              0.831
+Synovitis                      0.705              0.769               0.717              0.777               0.717              0.777               0.713              0.778
+Baker's                        0.934              0.934               0.930              0.930               0.930              0.930               0.921              0.921
+Contusion                      0.761              0.761               0.817              0.817               0.814              0.814               0.826              0.826
+Fracture                       0.796              0.796               0.777              0.777               0.777              0.777               0.776              0.776
+w=1.0 impSyn=False    0.8669
+w=1.0 impSyn=True     0.8722
+w=0.8 impSyn=False    0.8716
+w=0.8 impSyn=True     0.8766
+w=0.7 impSyn=False    0.8712
+w=0.7 impSyn=True     0.8762
+w=0.5 impSyn=False    0.8713
+w=0.5 impSyn=True     0.8767
+missing studies: 0
+non-gold mean soft label:
+ ACL                 0.184
+MCL                 0.101
+Medial Meniscus     0.431
+Lateral Meniscus    0.193
+Medial OA           0.244
+Lateral OA          0.169
+PF OA               0.311
+Effusion            0.326
+Synovitis           0.385
+Baker's             0.193
+Contusion           0.224
+Fracture            0.139
