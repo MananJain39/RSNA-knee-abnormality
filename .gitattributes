@@ -1,0 +1,2 @@
+# PDFs are generated documents, not text sources.
+*.pdf binary
