@@ -24,6 +24,7 @@ env/
 
 # Ignore all downloaded/generated data by default
 data/*
+!data/labels_v1.csv
 
 # Keep the data directory structure
 !data/raw/
