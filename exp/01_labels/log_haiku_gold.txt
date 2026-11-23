@@ -1,0 +1,3 @@
+58 to do (0 already done) model=us.anthropic.claude-haiku-5-5
+58/58 errs=0 20s eta=0s tokens={'in': 33562, 'out': 37393, 'cache_read': 151962, 'cache_write': 53010}
+DONE tokens {'in': 33562, 'out': 37393, 'cache_read': 151962, 'cache_write': 53010}
