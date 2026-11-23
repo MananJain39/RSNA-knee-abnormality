@@ -1,0 +1,23 @@
+{
+ "pack": "/data/pack",
+ "labels": "/data/code/data/labels_v1.csv",
+ "train_csv": "/data/code/data/raw/train.csv",
+ "backbone": "resnet34d.ra2_in1k",
+ "fold": 0,
+ "folds": 4,
+ "epochs": 3,
+ "bs": 6,
+ "n_slices": 16,
+ "crop": 224,
+ "lr": 0.0003,
+ "head_lr": 0.001,
+ "wd": 0.02,
+ "slots": "sag_fs,sag_t1,cor_fs,cor_t1,ax_fs",
+ "out": "/data/exp/D2",
+ "bench": false,
+ "smoke": false,
+ "seed": 0,
+ "max_train": 1200,
+ "max_val": 300,
+ "eval_train": false
+}
