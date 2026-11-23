@@ -87,6 +87,9 @@ experiments/
 outputs/
 logs/
 
+# Source package, not generated experiment output
+!src/experiments/
+
 # =========================
 # IDE
 # =========================
